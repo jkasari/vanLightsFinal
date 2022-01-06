@@ -168,8 +168,9 @@ class LEDBar {
       while(ButtControl.stayInMode(mode)) {
         uint32_t color = strip.Color(0, 0, 255);
         strip.fill(color, 0, LED_COUNT);
-        strip.setBrightness(BrightnessPot.getValue());
         strip.show();
+        delay(1);
+        strip.setBrightness(BrightnessPot.getValue());
       }
       fadeOff();
     }
