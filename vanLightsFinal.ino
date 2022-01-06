@@ -20,13 +20,6 @@ class PotientometerSmoother{
         return value;
       }
 
-      void operator=(PotientometerSmoother& potSmooth) {
-        this->port = potSmooth.port;
-        this->highRead = potSmooth.highRead;
-        this->lowRead = potSmooth.lowRead;
-      }
-      
-
     private:
       uint8_t port = 0;
       size_t target = 0;
@@ -51,7 +44,7 @@ class ButtonControl {
       if (count > 1) {
         if (halfSec > count) {mode++;}
         if (count > halfSec && moreSec > count) {mode--;}
-        if (moreSec > count) {mode = 0;}
+        //if (count > moreSec) {mode = 0;}
         count = 0;
         mode = modeCheck(mode);
         return false;
@@ -67,12 +60,13 @@ class ButtonControl {
       if (1 > mode) {
         return modeLimit;
       }
+      return mode;
     }
     size_t count = 0;
     int8_t modeLimit = 0;
     uint8_t port = 0;
-    int16_t halfSec = 300; // These are how long a button needs to be held for to switch modes.
-    int16_t moreSec = 1500;
+    const int16_t halfSec = 300; // These are how long a button needs to be held for to switch modes.
+    const int16_t moreSec = 5000;
 };
 
 class LEDBar {
@@ -161,7 +155,7 @@ class LEDBar {
     void dis2() {
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(255, 0, 0);
+        uint32_t color = strip.Color(0, 255, 0);
         strip.fill(color, 0, LED_COUNT);
         strip.setBrightness(BrightnessPot.getValue());
         strip.show();
