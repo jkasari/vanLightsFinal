@@ -20,7 +20,7 @@ class PotientometerSmoother{
         return map(value, 7, 893, lowRead, highRead);
       }
 
-      void resetLimits(int32_t low, int32_t high) {
+      void resetLimits(int32_t low, int32_t high) { // Resets the limits on the pot reader.
         highRead = high;
         lowRead = low;
       }
@@ -33,7 +33,7 @@ class PotientometerSmoother{
       int32_t lowRead = 0;
 };
 
-class ButtonControl {
+class ButtonControl { //This class keeps an eye on the button and mode managment
 
   public:
     ButtonControl(uint8_t portNum, uint8_t modeLim) {
@@ -41,12 +41,12 @@ class ButtonControl {
       modeLimit = modeLim;
     }
 
-    bool stayInMode(uint8_t& mode) {
+    bool stayInMode(uint8_t& mode) { // Returns true if the mode has not changed, and false if the mode changes.
       while(digitalRead(port) == LOW) {
-        count++;
+        count++; // Keep track of how long the button has been held down for. 
         delay(1);
       }
-      if (count > 1) {
+      if (count > 1) { // Only check in here if the button has been held down at all.
         if (halfSec > count) {mode++;}
         if (count > halfSec && moreSec > count) {mode--;}
         count = 0;
@@ -57,7 +57,7 @@ class ButtonControl {
     }
 
   private:
-    uint8_t modeCheck(int8_t mode) {
+    uint8_t modeCheck(int8_t mode) { // Returns an adjusted mode value that stays in bounds
       if (mode > modeLimit) {
         return 0;
       } 
@@ -73,14 +73,15 @@ class ButtonControl {
     const int16_t moreSec = 5000;
 };
 
-class LEDDisplay{ 
+class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
 
   public:
-    void setColor(uint8_t red, uint8_t green, uint8_t blue) {
+    void setColor(uint8_t red, uint8_t green, uint8_t blue) { // Tell the display what color you would like to light up.
       color = strip.Color(green, red, blue);
     }
-    void slideLight(size_t potReading) {
-        head = potReading + 3;
+
+    void slideLight(size_t potReading) { // The classic slidy light! This lights up 6 leds on the bar.
+        head = potReading + 3; // The leds position depends on the reading from the display pot, which is passed to this function,
         tail = potReading - 3;
         for (int i = tail; i < head; ++i) {
           displayLEDInBounds(i);
@@ -91,7 +92,7 @@ class LEDDisplay{
     uint32_t color;
     int32_t head = 0;
     int32_t tail = 0;
-    void displayLEDInBounds(int32_t loc) {
+    void displayLEDInBounds(int32_t loc) { // This takes in a location and only displays it if it is in bounds on the led strip.
       if (loc >= 0 && LED_COUNT >= loc) {
         strip.setPixelColor(loc, color);
       }
@@ -99,10 +100,10 @@ class LEDDisplay{
 
 };
 
-class LEDBar {
+class LEDBar { // This is the main class that houses everything!!
   public:
 
-    LEDBar(uint8_t bPort, 
+    LEDBar(uint8_t bPort, // Jesus christ look at all those variables!!!
            size_t bLow,
            size_t bHigh,
            uint8_t dPort,
@@ -114,8 +115,8 @@ class LEDBar {
            DisplayPot(dPort, dLow, dHigh),
            ButtControl(buttPort, modeLimit) {}
 
-    void isOn() {
-      brightness = BrightnessPot.getValue();
+    void isOn() { // This runs the light! Stick this in the main loop on the arduino for best results.
+      brightness = BrightnessPot.getValue(); // Make sure we are 
       switch (mode) {
         case 0:
           slideLight();
