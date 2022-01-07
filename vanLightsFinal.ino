@@ -69,6 +69,19 @@ class ButtonControl {
     const int16_t moreSec = 5000;
 };
 
+class LEDDisplay{ 
+
+  public:
+    void slideLight(size_t) {
+        uint32_t color = strip.Color(0, 255, 0);
+        strip.fill(color, 0, LED_COUNT);
+        strip.show();
+    }
+
+  private:
+
+};
+
 class LEDBar {
   public:
 
@@ -106,9 +119,16 @@ class LEDBar {
     PotientometerSmoother BrightnessPot;
     PotientometerSmoother DisplayPot;
     ButtonControl ButtControl;
+    LEDDisplay LightDisplay;
     uint8_t mode = 1;
     bool fading = false;
     uint32_t brightness = 0;
+
+    void brightnessCheck() {
+      if (brightness != BrightnessPot.getValue()) {
+        strip.setBrightness(BrightnessPot.getValue());
+      }
+    }
 
     void fadeOn() {
       for(int i = 1; i < 101; ++i) {
@@ -155,7 +175,7 @@ class LEDBar {
     void dis2() {
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(0, 255, 0);
+        uint32_t color = strip.Color(0, 0, 255);
         strip.fill(color, 0, LED_COUNT);
         strip.setBrightness(BrightnessPot.getValue());
         strip.show();
@@ -164,13 +184,11 @@ class LEDBar {
     }
 
     void dis3() {
+      LightDisplay.slideLight(DisplayPot.getValue());
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(0, 0, 255);
-        strip.fill(color, 0, LED_COUNT);
-        strip.show();
-        delay(1);
-        strip.setBrightness(BrightnessPot.getValue());
+        LightDisplay.slideLight(DisplayPot.getValue());
+        brightnessCheck();
       }
       fadeOff();
     }
