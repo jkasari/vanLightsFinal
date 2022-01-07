@@ -15,9 +15,14 @@ class PotientometerSmoother{
 
       // returns the smoothed out value of the potentiometer.
       int getValue() {
-        target = map(analogRead(port), 0, 1023, lowRead - 7, highRead - 7);
+        target = analogRead(port);
         value += floor((target - value) / 8);
-        return value;
+        return map(value, 7, 893, lowRead, highRead);
+      }
+
+      void resetLimits(int32_t low, int32_t high) {
+        highRead = high;
+        lowRead = low;
       }
 
     private:
@@ -44,7 +49,6 @@ class ButtonControl {
       if (count > 1) {
         if (halfSec > count) {mode++;}
         if (count > halfSec && moreSec > count) {mode--;}
-        //if (count > moreSec) {mode = 0;}
         count = 0;
         mode = modeCheck(mode);
         return false;
@@ -55,9 +59,9 @@ class ButtonControl {
   private:
     uint8_t modeCheck(int8_t mode) {
       if (mode > modeLimit) {
-        return 1;
+        return 0;
       } 
-      if (1 > mode) {
+      if (0 > mode) {
         return modeLimit;
       }
       return mode;
@@ -72,13 +76,26 @@ class ButtonControl {
 class LEDDisplay{ 
 
   public:
-    void slideLight(size_t) {
-        uint32_t color = strip.Color(0, 255, 0);
-        strip.fill(color, 0, LED_COUNT);
-        strip.show();
+    void setColor(uint8_t red, uint8_t green, uint8_t blue) {
+      color = strip.Color(green, red, blue);
+    }
+    void slideLight(size_t potReading) {
+        head = potReading + 3;
+        tail = potReading - 3;
+        for (int i = tail; i < head; ++i) {
+          displayLEDInBounds(i);
+        }
     }
 
   private:
+    uint32_t color;
+    int32_t head = 0;
+    int32_t tail = 0;
+    void displayLEDInBounds(int32_t loc) {
+      if (loc >= 0 && LED_COUNT >= loc) {
+        strip.setPixelColor(loc, color);
+      }
+    }
 
 };
 
@@ -101,7 +118,7 @@ class LEDBar {
       brightness = BrightnessPot.getValue();
       switch (mode) {
         case 0:
-          batteryDisplay();
+          slideLight();
           break;
         case 1:
           dis1();
@@ -120,7 +137,7 @@ class LEDBar {
     PotientometerSmoother DisplayPot;
     ButtonControl ButtControl;
     LEDDisplay LightDisplay;
-    uint8_t mode = 1;
+    uint8_t mode = 0;
     bool fading = false;
     uint32_t brightness = 0;
 
@@ -150,48 +167,34 @@ class LEDBar {
       strip.setBrightness(brightness);
     }
 
-    void batteryDisplay() {
+    void slideLight() {
+      DisplayPot.resetLimits(-2, LED_COUNT + 2);
+      LightDisplay.setColor(125, 255, 0);
       LightDisplay.slideLight(DisplayPot.getValue());
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
+        strip.clear();
         LightDisplay.slideLight(DisplayPot.getValue());
-        Serial.println(BrightnessPot.getValue());
+        Serial.println(DisplayPot.getValue());
         brightnessCheck();
+        strip.show();
       }
       fadeOff();
     }
 
     void dis1() {
-      LightDisplay.slideLight(DisplayPot.getValue());
-      fadeOn();
-      while(ButtControl.stayInMode(mode)) {
-        LightDisplay.slideLight(DisplayPot.getValue());
-        Serial.println(BrightnessPot.getValue());
-        brightnessCheck();
-      }
-      fadeOff();
+      strip.setPixelColor(10, 0, 255, 0);
+      strip.show();
     }
 
     void dis2() {
-      LightDisplay.slideLight(DisplayPot.getValue());
-      fadeOn();
-      while(ButtControl.stayInMode(mode)) {
-        LightDisplay.slideLight(DisplayPot.getValue());
-        Serial.println(BrightnessPot.getValue());
-        brightnessCheck();
-      }
-      fadeOff();
+      strip.setPixelColor(10, 0, 255, 0);
+      strip.show();
     }
 
     void dis3() {
-      LightDisplay.slideLight(DisplayPot.getValue());
-      fadeOn();
-      while(ButtControl.stayInMode(mode)) {
-        LightDisplay.slideLight(DisplayPot.getValue());
-        Serial.println(BrightnessPot.getValue());
-        brightnessCheck();
-      }
-      fadeOff();
+      strip.setPixelColor(10, 0, 255, 0);
+      strip.show();
     }
 
 };
