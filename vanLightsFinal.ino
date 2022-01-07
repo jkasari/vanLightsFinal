@@ -7,7 +7,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 class PotientometerSmoother{ 
   
     public: // Give it the number of the port, along the high and low limits of the values you want back. 
-      PotientometerSmoother(uint8_t portNum, size_t low, size_t high) {
+      PotientometerSmoother(uint8_t portNum, int32_t low, int32_t high) {
         port = portNum;
         highRead = high;
         lowRead = low;
@@ -15,17 +15,17 @@ class PotientometerSmoother{
 
       // returns the smoothed out value of the potentiometer.
       int getValue() {
-        target = map(analogRead(port), 0, 1023, lowRead - 7, highRead + 7);
+        target = map(analogRead(port), 0, 1023, lowRead - 7, highRead - 7);
         value += floor((target - value) / 8);
         return value;
       }
 
     private:
       uint8_t port = 0;
-      size_t target = 0;
-      size_t value = 0;
-      size_t highRead = 0;
-      size_t lowRead = 0;
+      int32_t target = 0;
+      int32_t value = 0;
+      int32_t highRead = 0;
+      int32_t lowRead = 0;
 };
 
 class ButtonControl {
@@ -151,34 +151,34 @@ class LEDBar {
     }
 
     void batteryDisplay() {
+      LightDisplay.slideLight(DisplayPot.getValue());
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(0, 255, 0);
-        strip.fill(color, 0, LED_COUNT);
-        strip.setBrightness(BrightnessPot.getValue());
-        strip.show();
+        LightDisplay.slideLight(DisplayPot.getValue());
+        Serial.println(BrightnessPot.getValue());
+        brightnessCheck();
       }
       fadeOff();
     }
 
     void dis1() {
+      LightDisplay.slideLight(DisplayPot.getValue());
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(255, 150, 0);
-        strip.fill(color, 0, LED_COUNT);
-        strip.setBrightness(BrightnessPot.getValue());
-        strip.show();
+        LightDisplay.slideLight(DisplayPot.getValue());
+        Serial.println(BrightnessPot.getValue());
+        brightnessCheck();
       }
       fadeOff();
     }
 
     void dis2() {
+      LightDisplay.slideLight(DisplayPot.getValue());
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
-        uint32_t color = strip.Color(0, 0, 255);
-        strip.fill(color, 0, LED_COUNT);
-        strip.setBrightness(BrightnessPot.getValue());
-        strip.show();
+        LightDisplay.slideLight(DisplayPot.getValue());
+        Serial.println(BrightnessPot.getValue());
+        brightnessCheck();
       }
       fadeOff();
     }
@@ -188,6 +188,7 @@ class LEDBar {
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
         LightDisplay.slideLight(DisplayPot.getValue());
+        Serial.println(BrightnessPot.getValue());
         brightnessCheck();
       }
       fadeOff();
@@ -211,4 +212,3 @@ void setup() {
 void loop() {  
   TheLight.isOn();
 }
-
