@@ -2,6 +2,11 @@
 #define LED_PIN 6
 #define LED_COUNT 32
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
+#define WRM_WHT strip.Color(200, 255, 0) 
+#define RED strip.Color(0, 255, 0)
+#define LOW_BRIGHTNESS 20
+#define HIGH_BRIGHTNESS 255
+
 
 
 class PotientometerSmoother{ 
@@ -16,8 +21,8 @@ class PotientometerSmoother{
       // returns the smoothed out value of the potentiometer.
       int getValue() {
         target = analogRead(port);
-        value += floor((target - value) / 8);
-        return map(value, 7, 893, lowRead, highRead);
+        if (pow((value - target), 2) > 9) { value = target;} // If the difference is bigger than 3 change the value. 
+        return map(value, 0, 1023, lowRead, highRead);
       }
 
       void resetLimits(int32_t low, int32_t high) { // Resets the limits on the pot reader.
@@ -76,39 +81,59 @@ class ButtonControl { //This class keeps an eye on the button and mode managment
 class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
 
   public:
-    void setColor(uint8_t red, uint8_t green, uint8_t blue) { // Tell the display what color you would like to light up.
-      color = strip.Color(green, red, blue);
+    void setColor(uint32_t newColor) { // Tell the display what color you would like to light up.
+      color = newColor;
     }
 
-    void slideLight(size_t potReading) { // The classic slidy light! This lights up 6 leds on the bar.
-        head = potReading + 3; // The leds position depends on the reading from the display pot, which is passed to this function,
-        tail = potReading - 3;
-        for (int i = tail; i < head; ++i) {
+ 
+    void slideLightDisplay(int32_t potReading, int32_t brightness) { // The classic slidy light! This lights up 6 leds on the bar.
+      head = potReading + 2; // The leds position depends on the reading from the display pot, which is passed to this function,
+      tail = potReading - 2;
+      for (int i = tail; i <= head; ++i) {
+        displayLEDInBounds(i);
+      }
+      lowLightDisplay(brightness);
+    }
+
+
+    void bigLightDisplay(int32_t potReading, int32_t brightness) {
+        head = potReading + (LED_COUNT / 2); // The leds position depends on the reading from the display pot, which is passed to this function,
+        tail = potReading - (LED_COUNT / 2);
+        // Serial.println(potReading); if I un comment this, the whole thing crashes... why????
+        for (int i = tail; i <= head; ++i) {
           displayLEDInBounds(i);
         }
+        lowLightDisplay(brightness);
     }
 
   private:
     uint32_t color;
     int32_t head = 0;
     int32_t tail = 0;
+    uint8_t lowLightThreshold = 25;
     void displayLEDInBounds(int32_t loc) { // This takes in a location and only displays it if it is in bounds on the led strip.
       if (loc >= 0 && LED_COUNT >= loc) {
         strip.setPixelColor(loc, color);
       }
     }
+    void lowLightDisplay(int32_t brightness) {
+      if (brightness < lowLightThreshold) {
+        strip.clear();
+        strip.fill(RED, 0);
+      }
 
+    }
 };
 
 class LEDBar { // This is the main class that houses everything!!
   public:
 
     LEDBar(uint8_t bPort, // Jesus christ look at all those variables!!!
-           size_t bLow,
-           size_t bHigh,
+           int32_t bLow,
+           int32_t bHigh,
            uint8_t dPort,
-           size_t dLow,
-           size_t dHigh,
+           int32_t dLow,
+           int32_t dHigh,
            uint8_t buttPort, 
            uint8_t modeLimit) : 
            BrightnessPot(bPort, bLow, bHigh),
@@ -116,13 +141,12 @@ class LEDBar { // This is the main class that houses everything!!
            ButtControl(buttPort, modeLimit) {}
 
     void isOn() { // This runs the light! Stick this in the main loop on the arduino for best results.
-      brightness = BrightnessPot.getValue(); // Make sure we are 
       switch (mode) {
         case 0:
           slideLight();
           break;
         case 1:
-          dis1();
+          bigLight();
           break;
         case 2:
           dis2();
@@ -133,6 +157,10 @@ class LEDBar { // This is the main class that houses everything!!
       }
     }
 
+    void calibrateBrightness() { // One time use just to calibrate the brightness before starting the program.
+      brightness = BrightnessPot.getValue();
+    }
+
   private:
     PotientometerSmoother BrightnessPot;
     PotientometerSmoother DisplayPot;
@@ -141,10 +169,13 @@ class LEDBar { // This is the main class that houses everything!!
     uint8_t mode = 0;
     bool fading = false;
     uint32_t brightness = 0;
+    uint8_t lowLightThreshold = 25;
 
     void brightnessCheck() {
-      if (brightness != BrightnessPot.getValue()) {
-        strip.setBrightness(BrightnessPot.getValue());
+      uint32_t tempBir = BrightnessPot.getValue();
+      if (brightness != tempBir) {
+        brightness = tempBir;
+        strip.setBrightness(brightness);
       }
     }
 
@@ -166,23 +197,37 @@ class LEDBar { // This is the main class that houses everything!!
         delay(2);
       }
       strip.setBrightness(brightness);
+      strip.clear();
     }
 
     void slideLight() {
-      DisplayPot.resetLimits(-2, LED_COUNT + 2);
-      LightDisplay.setColor(125, 255, 0);
-      LightDisplay.slideLight(DisplayPot.getValue());
+      DisplayPot.resetLimits(-2, LED_COUNT + 1);
+      LightDisplay.setColor(WRM_WHT);
+      LightDisplay.slideLightDisplay(DisplayPot.getValue(), brightness);
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
         strip.clear();
-        LightDisplay.slideLight(DisplayPot.getValue());
-        Serial.println(DisplayPot.getValue());
+        LightDisplay.slideLightDisplay(DisplayPot.getValue(), brightness);
+        brightnessCheck();
+        strip.show();
+        Serial.println(brightness);
+      }
+      fadeOff();
+    }
+
+    void bigLight() {
+      DisplayPot.resetLimits((-LED_COUNT / 2), LED_COUNT + (LED_COUNT / 2) - 1);
+      LightDisplay.setColor(WRM_WHT);
+      LightDisplay.bigLightDisplay(DisplayPot.getValue(), brightness);
+      fadeOn();
+      while(ButtControl.stayInMode(mode)) {
+        strip.clear();
+        LightDisplay.bigLightDisplay(DisplayPot.getValue(), brightness);
         brightnessCheck();
         strip.show();
       }
       fadeOff();
     }
-
     void dis1() {
       strip.setPixelColor(10, 0, 255, 0);
       strip.show();
@@ -200,7 +245,7 @@ class LEDBar { // This is the main class that houses everything!!
 
 };
 
-LEDBar TheLight(A0, 20, 255, A1, 0, 255, A5, 3);
+LEDBar TheLight(A0, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, A1, 0, 0, A5, 3);
 
 void setup() {
   Serial.begin(9600);
@@ -209,6 +254,7 @@ void setup() {
   pinMode(A1, INPUT);
   pinMode(A5, INPUT_PULLUP);
   pinMode(A7, INPUT);
+  TheLight.calibrateBrightness();
 }
 
 
