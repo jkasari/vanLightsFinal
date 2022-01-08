@@ -7,6 +7,10 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 #define GRN strip.Color(255, 0, 0)
 #define LOW_BRIGHTNESS 20
 #define HIGH_BRIGHTNESS 255
+#define POT1 A1
+#define POT2 A3
+#define BUTTON A5
+#define MODE_NUM 2
 
 
 
@@ -117,6 +121,10 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         lowLightDisplay(brightness);
     }
 
+    // Needs to be used in a loop. This will display random leds, fading them on a and off. Once off, they stay off untill turned on again.
+    // The pot reading here acts as a delay stopping the function from turning leds on and off.
+    // So everytime the count lines up with the pot reading, the function lights up another led.
+    // The greater the pot reading the longer between new leds getting lit up. 
     void discoLights(int32_t potReading) {
       count++;
       if (count % potReading == 0) { // Time to light up another dot. 
@@ -128,10 +136,11 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     }
 
   private:
+    // Helper class for the disco light function
     class ColoredDots{
 
       public:
-        void displayDot() {
+        void displayDot() { // If the dot is on, move it up or down in brightness.
           if (ON) {
             if (brightDir) {
               increaseBrightness();
@@ -174,10 +183,11 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
           }
         }
 
-        void setRandomColor() {
+        void setRandomColor() { // This picks a new color index for the pick color function
           colorIndex = random(5);
         }
 
+        // This allows you to animate a color for any level of brightness free of strip brightness.
         uint32_t pickColor(uint8_t color, uint8_t brightness) {
           switch(color) {
            case 0:
@@ -214,7 +224,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         strip.setPixelColor(loc, color);
       }
     }
-    void lowLightDisplay(int32_t brightness) {
+    void lowLightDisplay(int32_t brightness) { // Turns the strip red when the light is turned down low enough. 
       if (brightness < lowLightThreshold) {
         strip.clear();
         strip.fill(RED, 0);
@@ -267,7 +277,7 @@ class LEDBar { // This is the main class that houses everything!!
     uint32_t brightness = 0;
     uint8_t lowLightThreshold = 25;
 
-    void brightnessCheck() {
+    void brightnessCheck() { // Check the reading on the brightness potentiometer. If it has changed update the overall strip brightness.
       uint32_t tempBir = BrightnessPot.getValue();
       if (brightness != tempBir) {
         brightness = tempBir;
@@ -275,7 +285,7 @@ class LEDBar { // This is the main class that houses everything!!
       }
     }
 
-    void fadeOn() {
+    void fadeOn() { // Take the brightness from zero to whatever the current level is.
       for(int i = 1; i < 101; ++i) {
         brightnessCheck();
         uint32_t fadeValue = brightness * i / 100;
@@ -286,7 +296,7 @@ class LEDBar { // This is the main class that houses everything!!
       strip.setBrightness(brightness);
     }
 
-    void fadeOff() {
+    void fadeOff() { // Take the brightness from the current level down to zero.
       for(int i = 100; i > 0; --i) {
         brightnessCheck();
         uint32_t fadeValue = brightness * i / 100;
@@ -298,7 +308,7 @@ class LEDBar { // This is the main class that houses everything!!
       strip.clear();
     }
 
-    void slideLight() {
+    void slideLight() { // Displays a 5 led light pod and slides it around for localized light
       DisplayPot.resetLimits(-2, LED_COUNT + 1);
       LightDisplay.setColor(WRM_WHT);
       LightDisplay.slideLightDisplay(DisplayPot.getValue(), brightness);
@@ -312,7 +322,7 @@ class LEDBar { // This is the main class that houses everything!!
       fadeOff();
     }
 
-    void bigLight() {
+    void bigLight() { // This time the light pod is the size of the led strip. Sliding it one way or the other essentially shifts the total light on the strip.
       DisplayPot.resetLimits((-LED_COUNT / 2), LED_COUNT + (LED_COUNT / 2) - 1);
       LightDisplay.setColor(WRM_WHT);
       LightDisplay.bigLightDisplay(DisplayPot.getValue(), brightness);
@@ -326,7 +336,7 @@ class LEDBar { // This is the main class that houses everything!!
       fadeOff();
     }
 
-    void discoParty() {
+    void discoParty() { // Randomly lights up colored leds for a party! how many leds are currently lit is decided by the display pot. 
       DisplayPot.resetLimits(1, 50);
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
@@ -339,7 +349,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 };
 
-LEDBar TheLight(A0, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, A1, 0, 0, A5, 2);
+LEDBar TheLight(POT1, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, POT2, 0, 0, BUTTON, MODE_NUM);
 
 void setup() {
   Serial.begin(9600);
