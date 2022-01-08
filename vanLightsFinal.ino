@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #define LED_PIN 6
-#define LED_COUNT 32
+#define LED_COUNT 50
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 #define WRM_WHT strip.Color(200, 255, 0) 
 #define RED strip.Color(0, 255, 0)
