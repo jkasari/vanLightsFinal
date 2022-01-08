@@ -4,6 +4,7 @@
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 #define WRM_WHT strip.Color(200, 255, 0) 
 #define RED strip.Color(0, 255, 0)
+#define GRN strip.Color(255, 0, 0)
 #define LOW_BRIGHTNESS 20
 #define HIGH_BRIGHTNESS 255
 
@@ -30,6 +31,10 @@ class PotientometerSmoother{
         lowRead = low;
       }
 
+      void calibrateSensor() {
+        value = analogRead(port);
+      }
+
     private:
       uint8_t port = 0;
       int32_t target = 0;
@@ -50,6 +55,11 @@ class ButtonControl { //This class keeps an eye on the button and mode managment
       while(digitalRead(port) == LOW) {
         count++; // Keep track of how long the button has been held down for. 
         delay(1);
+        if (count > moreSec) { // What tf is this?? Well this is a fake battery life display if you hold the button down long enough.
+          strip.clear();
+          strip.fill(GRN, 0, LED_COUNT);
+          strip.show();
+        }
       }
       if (count > 1) { // Only check in here if the button has been held down at all.
         if (halfSec > count) {mode++;}
@@ -75,7 +85,7 @@ class ButtonControl { //This class keeps an eye on the button and mode managment
     int8_t modeLimit = 0;
     uint8_t port = 0;
     const int16_t halfSec = 300; // These are how long a button needs to be held for to switch modes.
-    const int16_t moreSec = 5000;
+    const int16_t moreSec = 3000;
 };
 
 class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
@@ -87,7 +97,6 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         ColorDots[i].setLocation(i);
       }
     }
-
  
     void slideLightDisplay(int32_t potReading, int32_t brightness) { // The classic slidy light! This lights up 6 leds on the bar.
       head = potReading + 2; // The leds position depends on the reading from the display pot, which is passed to this function,
@@ -242,8 +251,10 @@ class LEDBar { // This is the main class that houses everything!!
       }
     }
 
-    void calibrateBrightness() { // One time use just to calibrate the brightness before starting the program.
+    void calibrateSensors() {
+      BrightnessPot.calibrateSensor();
       brightness = BrightnessPot.getValue();
+      DisplayPot.calibrateSensor();
     }
 
   private:
@@ -266,6 +277,7 @@ class LEDBar { // This is the main class that houses everything!!
 
     void fadeOn() {
       for(int i = 1; i < 101; ++i) {
+        brightnessCheck();
         uint32_t fadeValue = brightness * i / 100;
         strip.setBrightness(fadeValue);
         strip.show();
@@ -276,6 +288,7 @@ class LEDBar { // This is the main class that houses everything!!
 
     void fadeOff() {
       for(int i = 100; i > 0; --i) {
+        brightnessCheck();
         uint32_t fadeValue = brightness * i / 100;
         strip.setBrightness(fadeValue);
         strip.show();
@@ -336,7 +349,7 @@ void setup() {
   pinMode(A1, INPUT);
   pinMode(A5, INPUT_PULLUP);
   pinMode(A7, INPUT);
-  TheLight.calibrateBrightness();
+  TheLight.calibrateSensors();
 }
 
 
