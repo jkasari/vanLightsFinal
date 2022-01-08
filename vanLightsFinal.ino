@@ -106,7 +106,89 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         lowLightDisplay(brightness);
     }
 
+    void discoLights(int32_t potReading) {
+      if (count % potReading == 0) { // Time to light up another dot. 
+        ColorDots[random(LED_COUNT)].turnOn();
+      }
+      for (int i = 0; i < LED_COUNT; ++i) {
+        ColorDots[i].display();
+      }
+    }
+
   private:
+    class ColoredDots{
+
+      public:
+        void display() {
+          if (ON) {
+            if (brightDir) {
+              increaseBrightness();
+            } else {
+              decreaseBrightnes();
+            }
+            displaySelf();
+          }
+        }
+
+        void turnOn() {
+          ON = true;
+        }
+
+      private:
+        uint8_t colorIndex = random(5);
+        int32_t location = 0;
+        uint8_t brightValue = 0;
+        size_t count = 0;
+        bool brightDir = true;
+        bool ON = false;
+        int8_t changeRate = random(5);
+
+        void increaseBrightness() {
+          brightValue += changeRate;
+          if (brightValue >= 250) {
+            brightDir = false;
+          }
+        }
+
+        void decreaseBrightnes() {
+          brightValue -= changeRate;
+          if (brightValue <= 5) {
+            brightDir = true;
+            ON = false;
+          }
+        }
+
+        void setRandomColor() {
+          colorIndex = random(5);
+        }
+
+        uint32_t pickColor(uint8_t color, uint8_t brightness) {
+          switch(color) {
+           case 0:
+           //White
+            return strip.Color(brightness, brightness, brightness);
+           case 1:
+            //Magenta
+            return strip.Color(0, brightness, brightness);
+           case 2:
+            //Violet
+            return strip.Color(0, brightness / 2, brightness);
+           case 3:
+            // Green ish??
+            return strip.Color(brightness, brightness / 2, 0);
+           case 4:
+            // Cyan
+            return strip.Color(brightness, 0, brightness );
+          }
+        }
+
+         void displaySelf() {
+           strip.setPixelColor(location, pickColor(colorIndex, brightValue));
+         }
+    };
+
+    ColoredDots ColorDots[LED_COUNT];
+    size_t count = 0;
     uint32_t color;
     int32_t head = 0;
     int32_t tail = 0;
@@ -121,7 +203,6 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         strip.clear();
         strip.fill(RED, 0);
       }
-
     }
 };
 
@@ -149,10 +230,10 @@ class LEDBar { // This is the main class that houses everything!!
           bigLight();
           break;
         case 2:
-          dis2();
+          discoParty();
           break;
         case 3:
-          dis3();
+          discoParty();
           break;
       }
     }
@@ -210,7 +291,6 @@ class LEDBar { // This is the main class that houses everything!!
         LightDisplay.slideLightDisplay(DisplayPot.getValue(), brightness);
         brightnessCheck();
         strip.show();
-        Serial.println(brightness);
       }
       fadeOff();
     }
@@ -228,21 +308,19 @@ class LEDBar { // This is the main class that houses everything!!
       }
       fadeOff();
     }
-    void dis1() {
-      strip.setPixelColor(10, 0, 255, 0);
-      strip.show();
-    }
 
-    void dis2() {
-      strip.setPixelColor(10, 0, 255, 0);
-      strip.show();
+    void discoParty() {
+      DisplayPot.resetLimits(50, 2000);
+      LightDisplay.discoLights(DisplayPot.getValue());
+      fadeOn();
+      while(ButtControl.stayInMode(mode)) {
+        LightDisplay.discoLights(DisplayPot.getValue());
+        brightnessCheck();
+        delay(1);
+        strip.show();
+      }
+      fadeOff();
     }
-
-    void dis3() {
-      strip.setPixelColor(10, 0, 255, 0);
-      strip.show();
-    }
-
 };
 
 LEDBar TheLight(A0, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, A1, 0, 0, A5, 3);
