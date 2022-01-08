@@ -1,6 +1,7 @@
 {
-    "board": "arduino:avr:uno",
-    "port": "/dev/ttyACM0",
+    "board": "arduino:avr:nano",
+    "port": "/dev/ttyUSB0",
     "programmer": "arduino:avrispmkii",
-    "sketch": "vanLightsFinal.ino"
+    "sketch": "vanLightsFinal.ino",
+    "configuration": "cpu=atmega328"
 }

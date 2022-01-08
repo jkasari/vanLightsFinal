@@ -2,7 +2,7 @@
 #define LED_PIN 6
 #define LED_COUNT 50
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
-#define WRM_WHT strip.Color(200, 255, 0) 
+#define WRM_WHT strip.Color(127, 255, 0) 
 #define RED strip.Color(0, 255, 0)
 #define GRN strip.Color(255, 0, 0)
 #define LOW_BRIGHTNESS 20
@@ -103,8 +103,8 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     }
  
     void slideLightDisplay(int32_t potReading, int32_t brightness) { // The classic slidy light! This lights up 6 leds on the bar.
-      head = potReading + 2; // The leds position depends on the reading from the display pot, which is passed to this function,
-      tail = potReading - 2;
+      head = potReading + 3; // The leds position depends on the reading from the display pot, which is passed to this function,
+      tail = potReading - 3;
       for (int i = tail; i <= head; ++i) {
         displayLEDInBounds(i);
       }
@@ -113,8 +113,8 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
 
 
     void bigLightDisplay(int32_t potReading, int32_t brightness) {
-        head = potReading + (LED_COUNT / 2); // The leds position depends on the reading from the display pot, which is passed to this function,
-        tail = potReading - (LED_COUNT / 2);
+        head = potReading + (LED_COUNT / 2) + 6; // The leds position depends on the reading from the display pot, which is passed to this function,
+        tail = potReading - (LED_COUNT / 2) - 6; // The plus 6 here is so that the light pauses longer when fully displayed. 
         for (int i = tail; i <= head; ++i) {
           displayLEDInBounds(i);
         }
@@ -147,7 +147,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
             } else {
               decreaseBrightnes();
             }
-              displaySelf();
+            displaySelf();
           }
         }
 
@@ -180,6 +180,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
           if (brightValue <= 5) {
             brightDir = true;
             ON = false;
+            brightValue = 0;
           }
         }
 
@@ -206,6 +207,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
             // Cyan
             return strip.Color(brightness, 0, brightness );
           }
+          return strip.Color(0, 0, 0);
         }
 
          void displaySelf() {
@@ -218,7 +220,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     uint32_t color = 0;
     int32_t head = 0;
     int32_t tail = 0;
-    uint8_t lowLightThreshold = 25;
+    uint8_t lowLightThreshold = 22;
     void displayLEDInBounds(int32_t loc) { // This takes in a location and only displays it if it is in bounds on the led strip.
       if (loc >= 0 && LED_COUNT >= loc) {
         strip.setPixelColor(loc, color);
@@ -309,7 +311,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 
     void slideLight() { // Displays a 5 led light pod and slides it around for localized light
-      DisplayPot.resetLimits(-2, LED_COUNT + 1);
+      DisplayPot.resetLimits(-3, LED_COUNT + 2);
       LightDisplay.setColor(WRM_WHT);
       LightDisplay.slideLightDisplay(DisplayPot.getValue(), brightness);
       fadeOn();
@@ -323,7 +325,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 
     void bigLight() { // This time the light pod is the size of the led strip. Sliding it one way or the other essentially shifts the total light on the strip.
-      DisplayPot.resetLimits((-LED_COUNT / 2), LED_COUNT + (LED_COUNT / 2) - 1);
+      DisplayPot.resetLimits((-LED_COUNT / 2) - 6, LED_COUNT + (LED_COUNT / 2) + 5);
       LightDisplay.setColor(WRM_WHT);
       LightDisplay.bigLightDisplay(DisplayPot.getValue(), brightness);
       fadeOn();
@@ -349,7 +351,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 };
 
-LEDBar TheLight(POT1, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, POT2, 0, 0, BUTTON, MODE_NUM);
+LEDBar TheLight(POT2, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, POT1, 0, 0, BUTTON, MODE_NUM);
 
 void setup() {
   Serial.begin(9600);
