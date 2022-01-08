@@ -21,8 +21,8 @@ class PotientometerSmoother{
       // returns the smoothed out value of the potentiometer.
       int getValue() {
         target = analogRead(port);
-        if (pow((value - target), 2) > 9) { value = target;} // If the difference is bigger than 3 change the value. 
-        return map(value, 0, 1023, lowRead, highRead);
+        value += floor((target - value) / 8);
+        return map(value, 7, 1016, lowRead, highRead);
       }
 
       void resetLimits(int32_t low, int32_t high) { // Resets the limits on the pot reader.
@@ -47,13 +47,13 @@ class ButtonControl { //This class keeps an eye on the button and mode managment
     }
 
     bool stayInMode(int8_t& mode) { // Returns true if the mode has not changed, and false if the mode changes.
-      if (digitalRead(port) == LOW) {
-        while(digitalRead(port) == LOW) {
-          count++; // Keep track of how long the button has been held down for. 
-          delay(1);
-        }
+      while(digitalRead(port) == LOW) {
+        count++; // Keep track of how long the button has been held down for. 
+        delay(1);
+      }
+      if (count > 1) { // Only check in here if the button has been held down at all.
         if (halfSec > count) {mode++;}
-        if (count >= halfSec && moreSec > count) {mode--;}
+        if (count > halfSec && moreSec > count) {mode--;}
         count = 0;
         mode = modeCheck(mode);
         return false;
@@ -129,13 +129,12 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
             } else {
               decreaseBrightnes();
             }
-            displaySelf();
+              displaySelf();
           }
         }
 
         void turnOn() {
           ON = true;
-          changeRate = random(3);
         }
 
         void setLocation(int32_t newLoc) {
@@ -149,7 +148,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         size_t count = 0;
         bool brightDir = true;
         bool ON = false;
-        int8_t changeRate = 0;
+        int8_t changeRate = random(5);
 
         void increaseBrightness() {
           brightValue += changeRate;
@@ -333,6 +332,7 @@ void setup() {
   Serial.begin(9600);
   strip.begin();
   strip.clear();
+  pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pinMode(A5, INPUT_PULLUP);
   pinMode(A7, INPUT);
