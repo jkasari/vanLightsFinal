@@ -46,14 +46,14 @@ class ButtonControl { //This class keeps an eye on the button and mode managment
       modeLimit = modeLim;
     }
 
-    bool stayInMode(uint8_t& mode) { // Returns true if the mode has not changed, and false if the mode changes.
-      while(digitalRead(port) == LOW) {
-        count++; // Keep track of how long the button has been held down for. 
-        delay(1);
-      }
-      if (count > 1) { // Only check in here if the button has been held down at all.
+    bool stayInMode(int8_t& mode) { // Returns true if the mode has not changed, and false if the mode changes.
+      if (digitalRead(port) == LOW) {
+        while(digitalRead(port) == LOW) {
+          count++; // Keep track of how long the button has been held down for. 
+          delay(1);
+        }
         if (halfSec > count) {mode++;}
-        if (count > halfSec && moreSec > count) {mode--;}
+        if (count >= halfSec && moreSec > count) {mode--;}
         count = 0;
         mode = modeCheck(mode);
         return false;
@@ -83,6 +83,9 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
   public:
     void setColor(uint32_t newColor) { // Tell the display what color you would like to light up.
       color = newColor;
+      for (int i = 0; i < LED_COUNT; ++i) {
+        ColorDots[i].setLocation(i);
+      }
     }
 
  
@@ -99,7 +102,6 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     void bigLightDisplay(int32_t potReading, int32_t brightness) {
         head = potReading + (LED_COUNT / 2); // The leds position depends on the reading from the display pot, which is passed to this function,
         tail = potReading - (LED_COUNT / 2);
-        // Serial.println(potReading); if I un comment this, the whole thing crashes... why????
         for (int i = tail; i <= head; ++i) {
           displayLEDInBounds(i);
         }
@@ -107,11 +109,12 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     }
 
     void discoLights(int32_t potReading) {
+      count++;
       if (count % potReading == 0) { // Time to light up another dot. 
         ColorDots[random(LED_COUNT)].turnOn();
       }
       for (int i = 0; i < LED_COUNT; ++i) {
-        ColorDots[i].display();
+        ColorDots[i].displayDot();
       }
     }
 
@@ -119,7 +122,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     class ColoredDots{
 
       public:
-        void display() {
+        void displayDot() {
           if (ON) {
             if (brightDir) {
               increaseBrightness();
@@ -132,6 +135,11 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
 
         void turnOn() {
           ON = true;
+          changeRate = random(3);
+        }
+
+        void setLocation(int32_t newLoc) {
+          location = newLoc;
         }
 
       private:
@@ -141,7 +149,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
         size_t count = 0;
         bool brightDir = true;
         bool ON = false;
-        int8_t changeRate = random(5);
+        int8_t changeRate = 0;
 
         void increaseBrightness() {
           brightValue += changeRate;
@@ -189,7 +197,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
 
     ColoredDots ColorDots[LED_COUNT];
     size_t count = 0;
-    uint32_t color;
+    uint32_t color = 0;
     int32_t head = 0;
     int32_t tail = 0;
     uint8_t lowLightThreshold = 25;
@@ -232,9 +240,6 @@ class LEDBar { // This is the main class that houses everything!!
         case 2:
           discoParty();
           break;
-        case 3:
-          discoParty();
-          break;
       }
     }
 
@@ -247,7 +252,7 @@ class LEDBar { // This is the main class that houses everything!!
     PotientometerSmoother DisplayPot;
     ButtonControl ButtControl;
     LEDDisplay LightDisplay;
-    uint8_t mode = 0;
+    int8_t mode = 0;
     bool fading = false;
     uint32_t brightness = 0;
     uint8_t lowLightThreshold = 25;
@@ -310,8 +315,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 
     void discoParty() {
-      DisplayPot.resetLimits(50, 2000);
-      LightDisplay.discoLights(DisplayPot.getValue());
+      DisplayPot.resetLimits(1, 50);
       fadeOn();
       while(ButtControl.stayInMode(mode)) {
         LightDisplay.discoLights(DisplayPot.getValue());
@@ -323,7 +327,7 @@ class LEDBar { // This is the main class that houses everything!!
     }
 };
 
-LEDBar TheLight(A0, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, A1, 0, 0, A5, 3);
+LEDBar TheLight(A0, LOW_BRIGHTNESS, HIGH_BRIGHTNESS, A1, 0, 0, A5, 2);
 
 void setup() {
   Serial.begin(9600);
