@@ -5,8 +5,8 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 #define WRM_WHT strip.Color(127, 255, 0) 
 #define RED strip.Color(0, 255, 0)
 #define GRN strip.Color(255, 0, 0)
-#define LOW_BRIGHTNESS 20
-#define HIGH_BRIGHTNESS 255
+#define LOW_BRIGHTNESS 5
+#define HIGH_BRIGHTNESS 254
 #define POT1 A1
 #define POT2 A3
 #define BUTTON A5
@@ -181,6 +181,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
             brightDir = true;
             ON = false;
             brightValue = 0;
+            colorIndex = random(5);
           }
         }
 
@@ -220,7 +221,7 @@ class LEDDisplay{ // This class is incharge of just lighting leds up on the bar.
     uint32_t color = 0;
     int32_t head = 0;
     int32_t tail = 0;
-    uint8_t lowLightThreshold = 22;
+    uint8_t lowLightThreshold = LOW_BRIGHTNESS + 1;
     void displayLEDInBounds(int32_t loc) { // This takes in a location and only displays it if it is in bounds on the led strip.
       if (loc >= 0 && LED_COUNT >= loc) {
         strip.setPixelColor(loc, color);
